@@ -110,6 +110,7 @@ class Agent():
 
             # List to keep track of epsilon decay
             epsilon_history = []
+            loss_history = []  # THÊM DÒNG NÀY
 
             # Track number of steps taken. Used for syncing policy => target network.
             step_count=0
@@ -187,13 +188,14 @@ class Agent():
                 # Update graph every x seconds
                 current_time = datetime.now()
                 if current_time - last_graph_update_time > timedelta(seconds=10):
-                    self.save_graph(rewards_per_episode, epsilon_history)
+                    self.save_graph(rewards_per_episode, epsilon_history, loss_history)
                     last_graph_update_time = current_time
 
                 # If enough experience has been collected
                 if len(memory)>self.mini_batch_size:
                     mini_batch = memory.sample(self.mini_batch_size)
-                    self.optimize(mini_batch, policy_dqn, target_dqn)
+                    loss = self.optimize(mini_batch, policy_dqn, target_dqn)
+                    loss_history.append(loss)  # THÊM DÒNG NÀY
 
                     # Decay epsilon
                     epsilon = max(epsilon * self.epsilon_decay, self.epsilon_min)
@@ -205,29 +207,53 @@ class Agent():
                         step_count=0
 
 
-    def save_graph(self, rewards_per_episode, epsilon_history):
+    # Dòng 208-231, thay thế toàn bộ hàm save_graph
+    def save_graph(self, rewards_per_episode, epsilon_history, loss_history):
         # Save plots
-        fig = plt.figure(1)
+        fig = plt.figure(1, figsize=(15, 10))  # Tăng kích thước để chứa 4 biểu đồ
 
-        # Plot average rewards (Y-axis) vs episodes (X-axis)
-        mean_rewards = np.zeros(len(rewards_per_episode))
-        for x in range(len(mean_rewards)):
-            mean_rewards[x] = np.mean(rewards_per_episode[max(0, x-99):(x+1)])
-        plt.subplot(121) # plot on a 1 row x 2 col grid, at cell 1
-        # plt.xlabel('Episodes')
-        plt.ylabel('Mean Rewards')
-        plt.plot(mean_rewards)
+        # 1. Plot ACTUAL rewards (not mean) - Biểu đồ Reward
+        plt.subplot(2, 2, 1)  # 2 hàng, 2 cột, vị trí 1
+        plt.ylabel('Reward per Episode')
+        plt.xlabel('Episodes')
+        plt.plot(rewards_per_episode, alpha=0.6, color='blue')
+        plt.title('Reward per Episode')
+        plt.grid(True, alpha=0.3)
 
-        # Plot epsilon decay (Y-axis) vs episodes (X-axis)
-        plt.subplot(122) # plot on a 1 row x 2 col grid, at cell 2
-        # plt.xlabel('Time Steps')
-        plt.ylabel('Epsilon Decay')
-        plt.plot(epsilon_history)
+        # 2. Plot Score (giống reward nhưng có thể smooth hơn) - Biểu đồ Score
+        # Tính moving average với window nhỏ hơn (10 episodes) cho score
+        if len(rewards_per_episode) > 0:
+            window_size = min(10, len(rewards_per_episode))
+            score = np.convolve(rewards_per_episode, np.ones(window_size)/window_size, mode='valid')
+            plt. subplot(2, 2, 2)  # 2 hàng, 2 cột, vị trí 2
+            plt.ylabel('Score (10-episode MA)')
+            plt.xlabel('Episodes')
+            plt.plot(score, color='green')
+            plt.title('Score (Smoothed)')
+            plt.grid(True, alpha=0.3)
 
-        plt.subplots_adjust(wspace=1.0, hspace=1.0)
+        # 3. Plot epsilon decay - Biểu đồ Epsilon
+        if len(epsilon_history) > 0:
+            plt.subplot(2, 2, 3)  # 2 hàng, 2 cột, vị trí 3
+            plt.ylabel('Epsilon')
+            plt.xlabel('Training Steps')
+            plt.plot(epsilon_history, color='orange')
+            plt.title('Epsilon Decay')
+            plt.grid(True, alpha=0.3)
+
+        # 4. Plot loss - Biểu đồ Loss
+        if len(loss_history) > 0:
+            plt.subplot(2, 2, 4)  # 2 hàng, 2 cột, vị trí 4
+            plt.ylabel('Loss')
+            plt.xlabel('Training Steps')
+            plt.plot(loss_history, alpha=0.6, color='red')
+            plt.title('Training Loss')
+            plt.grid(True, alpha=0.3)
+
+        plt.tight_layout()  # Tự động điều chỉnh khoảng cách giữa các biểu đồ
 
         # Save plots
-        fig.savefig(self.GRAPH_FILE)
+        fig.savefig(self.GRAPH_FILE, dpi=100)
         plt.close(fig)
 
 
@@ -279,6 +305,8 @@ class Agent():
         self.optimizer.zero_grad()  # Clear gradients
         loss.backward()             # Compute gradients
         self.optimizer.step()       # Update network parameters i.e. weights and biases
+        # THÊM DÒNG NÀY để return loss
+        return loss.item()
 
 if __name__ == '__main__':
     # Parse command line inputs

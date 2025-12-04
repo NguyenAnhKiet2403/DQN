@@ -11,6 +11,14 @@
             "program": "agent.py",
             "console": "integratedTerminal",
             "args": ["flappybird1", "--train"]
+        },
+        {
+            "name": "Test Flappy Bird",
+            "type": "python",
+            "request": "launch",
+            "program": "agent.py",
+            "args": ["flappybird1"],  // Bỏ "--train"
+            "console": "integratedTerminal"
         }
     ]
 }
