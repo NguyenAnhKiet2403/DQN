@@ -19,6 +19,8 @@ import itertools
 import flappy_bird_gymnasium
 import os
 
+from reward_shaping import FlappyBirdRewardShaping
+
 # For printing date and time
 DATE_FORMAT = "%m-%d %H:%M:%S"
 
