@@ -80,8 +80,6 @@ class Agent():
             with open(self.LOG_FILE, 'w') as file:
                 file.write(log_message + '\n')
 
-        # Create instance of the environment.
-        # Use "**self.env_make_params" to pass in environment-specific parameters from hyperparameters.yml.
         #env = gym.make(self.env_id, render_mode='human' if render else None, **self.env_make_params)
 
         #new environemnt reward

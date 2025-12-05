@@ -51,4 +51,3 @@ if __name__ == '__main__':
     state = torch.randn(10, state_dim)
     output = net(state)
     print(output)
-
