@@ -82,7 +82,11 @@ class Agent():
 
         # Create instance of the environment.
         # Use "**self.env_make_params" to pass in environment-specific parameters from hyperparameters.yml.
-        env = gym.make(self.env_id, render_mode='human' if render else None, **self.env_make_params)
+        #env = gym.make(self.env_id, render_mode='human' if render else None, **self.env_make_params)
+
+        #new environemnt reward
+        base_env = gym.make(self.env_id, render_mode='human' if render else None, **self.env_make_params)
+        env = FlappyBirdRewardShaping(base_env)  # ← ÁP DỤNG REWARD SHAPING
 
         # Number of possible actions
         num_actions = env.action_space.n
@@ -136,7 +140,7 @@ class Agent():
 
             terminated = False      # True when agent reaches goal or fails
             episode_reward = 0.0    # Used to accumulate rewards per episode
-            game_score = 0  # ← Track game score
+            #game_score = 0  # ← Track game score
 
             # Perform actions until episode terminates or reaches max rewards
             # (on some envs, it is possible for the agent to train to a point where it NEVER terminates, so stop on reward is necessary)
@@ -161,8 +165,9 @@ class Agent():
                 # Accumulate rewards
                 episode_reward += reward
 
-                if reward >= 1:  # ← Phát hiện vượt ống
-                    game_score += 1
+                #notify score
+                #if reward >= 1:
+                    #game_score += 1
 
                 # Convert new state and reward to tensors on device
                 new_state = torch.tensor(new_state, dtype=torch.float, device=device)
@@ -180,6 +185,7 @@ class Agent():
 
             # Keep track of the rewards collected per episode.
             rewards_per_episode.append(episode_reward)
+            game_score = env.last_score  # ← Lấy từ wrapper
             game_scores_per_episode.append(game_score) #luu điểm số trò chơi
 
             # Save model when new best reward is obtained.
